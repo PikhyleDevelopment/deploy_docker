@@ -32,89 +32,118 @@ docker_packages=(
   'docker-compose-plugin'
 )
 
-check_codenames () {
-    codenames=(
-        "focal"
-        "jammy"
-        "noble"
-    )
+check_codenames() {
+  codenames=(
+    "focal"
+    "jammy"
+    "noble"
+  )
 
-    if [[ -x /usr/bin/lsb_release ]]; then
+  # Check for lsb_release
+  if [[ -x /usr/bin/lsb_release ]]; then
 
+    supported_os=0
+
+    # Loop through the above defined codenames and
+    # if the OS codename matches, continue with script.
+    for codename in "${codenames[@]}"; do
+      if [[ $codename == $(lsb_release -sc) ]]; then
+        supported_os=1
+        break
+      else
         supported_os=0
+      fi
+    done
 
-        for codename in "${codenames[@]}"; do
-            if [[ $codename == $(lsb_release -sc) ]]; then
-                supported_os=1
-                break
-            else
-                supported_os=0
-            fi
-        done
-
-        if [[ ! $supported_os == 1 ]]; then
-            echo -e "${WARN}Unsupported OS. Only supports ${codenames[@]}"
-            exit 2
-        fi
-        
-    else
-        echo -e "${WARN}lsb_release is not found.. Exiting.."
-        exit 2
+    # If we don't have a supported OS, exit.
+    if [[ ! $supported_os == 1 ]]; then
+      echo
+      echo -e "${WARN}Unsupported OS. Only supports ${codenames[@]}"
+      echo
+      exit 2
     fi
+
+  else
+    # Exit the script right away if we don't have lsb_release available.
+    echo
+    echo -e "${WARN}lsb_release is not found.. Exiting.."
+    echo
+    exit 2
+  fi
 }
 
+# Echo the usage string
 usage() {
+  echo
   echo -e $usage_string
+  echo
 }
 
 remove() {
+  # Start the removal process by checking that this OS is supported.
   check_codenames
 
+  echo
   echo -e "${INFO}Removing docker binaries, gpg key, and apt list."
+  echo
   # Uninstall docker engine binaries
   for pkg in "${docker_packages[@]}"; do
     sudo apt remove $pkg -y
   done
 
+  # If the apt list exists, remove it.
   if [ -e /etc/apt/sources.list.d/docker.list ]; then
     sudo rm -v /etc/apt/sources.list.d/docker.list
   else
+    echo
     echo -e "${INFO}Docker apt list not found.. skipping"
+    echo
   fi
 
+  # If the GPG key exists, remove it.
   if [ -e /etc/apt/keyrings/docker.asc ]; then
     sudo rm -v /etc/apt/keyrings/docker.asc
   else
+    echo
     echo -e "${INFO}Docker gpg key not found.. skipping"
+    echo
   fi
 
+  echo
   echo -e "${INFO}Successfully cleaned up."
+  echo
   exit 0
 }
 
 install() {
+  # Start the installation with a check if the OS is supported
   check_codenames
 
   echo
   echo -e "${INFO}Updating and installing ca-certificates and curl"
   echo
+
+  # Install ca-certificates and curl
   sudo apt update
   sudo apt install ca-certificates curl -y
+
   echo
   echo -e "${INFO}Setting up Docker GPG key"
   echo
+
+  # Set up the keyrings directory with permissions
   sudo install -m 0755 -d /etc/apt/keyrings
 
+  # Check to make sure the GPG doesn't exist and install it.
   if [[ ! -e /etc/apt/keyrings/docker.asc ]]; then
     sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 
+    # Setup the apt list
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc]\
       https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
       sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     sudo chmod a+r /etc/apt/keyrings/docker.asc
-    sudo apt update
-    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
   else
     echo -e "${WARN}Docker gpg key not found.. Exiting"
     exit 1
@@ -124,14 +153,26 @@ install() {
   echo -e "${INFO}Updating repositories and installing docker binaries.."
   echo
 
+  # Install the docker binaries
   sudo apt update
   sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
-  echo -e "${SUCCESS}Docker successfully installed. Running hello-world.."
+  # If the docker binary exists, we have successfully installed docker engine.
+  # Run the hello-world container to verify correct installation.
+  if [[ -x /usr/bin/docker ]]; then
+    echo
+    echo -e "${SUCCESS}Docker successfully installed. Running hello-world.."
+    echo
 
-  sudo docker run hello-world
+    sudo docker run hello-world
 
-  exit 0
+    exit 0
+  else
+    echo
+    echo -e "${WARN}Docker not installed correctly."
+    echo
+    exit 1
+  fi
 }
 
 while getopts 'hir' flag; do
