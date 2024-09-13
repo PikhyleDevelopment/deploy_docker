@@ -32,23 +32,39 @@ docker_packages=(
   'docker-compose-plugin'
 )
 
+ubuntu_codenames=(
+  "focal"
+  "jammy"
+  "noble"
+)
+
+is_ubuntu_installation=false
+
+debian_codenames=(
+  "bookworm"
+  "bullseye"
+)
+
+is_debian_installation=false
+
 check_codenames() {
-  codenames=(
-    "focal"
-    "jammy"
-    "noble"
-  )
+  codenames=(${ubuntu_codenames[@]} ${debian_codenames[@]})
 
   # Check for lsb_release
   if [[ -x /usr/bin/lsb_release ]]; then
 
-    supported_os=0
+    supported_os=false
 
     # Loop through the above defined codenames and
     # if the OS codename matches, continue with script.
     for codename in "${codenames[@]}"; do
       if [[ $codename == $(lsb_release -sc) ]]; then
         supported_os=1
+        if [[ $codename == "bookworm" || $codename == "bullseye" ]]; then
+          is_debian_installation=true
+        else
+          is_ubuntu_installation=true
+        fi
         break
       else
         supported_os=0
@@ -136,12 +152,24 @@ install() {
 
   # Check to make sure the GPG doesn't exist and install it.
   if [[ ! -e /etc/apt/keyrings/docker.asc ]]; then
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    if [[ $is_ubuntu_installation == true ]]; then
+      sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 
-    # Setup the apt list
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc]\
-      https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
-      sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc]\
+        https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+        sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+    elif [[ $is_debian_installation == true ]]; then
+      sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc]\
+        https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+        sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+    else
+      echo -e "${WARN}NO DETECTED OS INSTALLATION"
+      exit 99
+    fi
 
     sudo chmod a+r /etc/apt/keyrings/docker.asc
   else
