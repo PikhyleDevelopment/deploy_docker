@@ -59,7 +59,7 @@ check_codenames() {
     # if the OS codename matches, continue with script.
     for codename in "${codenames[@]}"; do
       if [[ $codename == $(lsb_release -sc) ]]; then
-        supported_os=1
+        supported_os=true
         if [[ $codename == "bookworm" || $codename == "bullseye" ]]; then
           is_debian_installation=true
         else
@@ -67,7 +67,7 @@ check_codenames() {
         fi
         break
       else
-        supported_os=0
+        supported_os=false
       fi
     done
 
