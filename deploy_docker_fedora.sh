@@ -59,7 +59,8 @@ check_fedora() {
   if [[ -x /usr/bin/lsb_release ]]; then
     supported_os=false
 
-    if [[ $(lsb_release -si == "Fedora") ]]; then
+    if [[ $(lsb_release -si) == "Fedora" ]]; then
+      echo -e "${SUCCESS}Fedora installation confirmed${CLEAR}"
       supported_os=true
     else
       echo -e "${WARN}Not a Fedora installation. Exiting..${CLEAR}"
