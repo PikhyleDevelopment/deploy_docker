@@ -80,8 +80,20 @@ usage() {
 
 remove() {
   check_fedora
+  if [[ $(systemctl list-units | grep "docker.service") ]]; then
+    echo
+    echo -e "${INFO}Disabling and stopping docker.service${CLEAR}"
+    echo
+    sudo systemctl disable --now docker.service
+  else
+    echo
+    echo -e "${INFO}Docker service not installed.${CLEAR}"
+    echo
+  fi
 
-  sudo systemctl disable --now docker.service
+  echo
+  echo -e "${INFO}Removing docker packages${CLEAR}"
+  echo
 
   for pkg in "${docker_packages_remove[@]}"; do
     sudo dnf remove $pkg -y
@@ -92,6 +104,19 @@ remove() {
     echo -e "${INFO}Removing docker-ce repo${CLEAR}"
     echo
     sudo rm -v /etc/yum.repos.d/docker-ce.repo
+    if [[ ! -e /etc/yum.repos.d/docker-ce.repo ]]; then
+      echo
+      echo -e "${SUCCESS}Docker repo successfully removed${CLEAR}"
+      echo
+    else
+      echo
+      echo -e "${WARN}Docker repo not removed, please manually remove if desired${CLEAR}"
+      echo
+    fi
+  else
+    echo
+    echo -e "${INFO}Docker repo not found${CLEAR}"
+    echo
   fi
 
   echo
@@ -107,9 +132,18 @@ install() {
 
   check_fedora
 
+  echo
+  echo -e "${INFO}Checking for dnf-plugins-core${CLEAR}"
+  echo
   # Check for existence of dnf-plugins-core package
-  if [[ ! $(dnf --installed list | grep dnf-plugins-core) == 0 ]]; then
+  if [[ ! $(dnf --installed list | grep dnf-plugins-core) ]]; then
+    echo
+    echo -e "${INFO}Installing dnf-plugins-core${CLEAR}"
+    echo
     sudo dnf -y install dnf-plugins-core
+  else
+    echo
+    echo -e ${INFO}dnf-plugins-core already installed, continuing${CLEAR}""
   fi
 
   # Check for existence of docker repo
@@ -118,6 +152,9 @@ install() {
     echo -e "${INFO}Docker repo already setup.. continuing${CLEAR}"
     echo
   else
+    echo
+    echo -e "${INFO}Adding docker repository${CLEAR}"
+    echo
     sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
   fi
 
@@ -135,7 +172,7 @@ install() {
 
   # Install docker packages
   echo
-  echo -e "${INFO}Downloading and installing docker packages. Please manually verify the GPG key.${CLEAR}"
+  echo -e "${INFO}Downloading and installing docker packages${CLEAR}"
   echo
 
   sudo dnf -y install docker-ce docker-ce-cli containerd.io \
