@@ -14,8 +14,28 @@
 SUCCESS='\033[0;32m' # Green
 WARN='\033[0;31m'    # Red
 INFO='\033[1;33m'    # Yellow
+CLEAR='\033[0m'      # White
 
 usage_string="${INFO}$(basename "$0") [-r(emove)] [-h(elp)] [-i(nstall)]"
+
+echo '
+  ######                                                               
+  #     #  ####   ####  #    # ###### #####                            
+  #     # #    # #    # #   #  #      #    #                           
+  #     # #    # #      ####   #####  #    #                           
+  #     # #    # #      #  #   #      #####                            
+  #     # #    # #    # #   #  #      #   #                            
+  ######   ####   ####  #    # ###### #    #                           
+                                                                      
+  ######                                                               
+  #     # ###### #####  #       ####  #   # #    # ###### #    # ##### 
+  #     # #      #    # #      #    #  # #  ##  ## #      ##   #   #   
+  #     # #####  #    # #      #    #   #   # ## # #####  # #  #   #   
+  #     # #      #####  #      #    #   #   #    # #      #  # #   #   
+  #     # #      #      #      #    #   #   #    # #      #   ##   #   
+  ######  ###### #      ######  ####    #   #    # ###### #    #   #   
+                                                                      
+'
 
 docker_packages=(
   'docker.io'
@@ -74,7 +94,7 @@ check_codenames() {
     # If we don't have a supported OS, exit.
     if [[ ! $supported_os == 1 ]]; then
       echo
-      echo -e "${WARN}Unsupported OS. Only supports ${codenames[@]}"
+      echo -e "${WARN}Unsupported OS. Only supports ${codenames[@]}${CLEAR}"
       echo
       exit 2
     fi
@@ -82,7 +102,7 @@ check_codenames() {
   else
     # Exit the script right away if we don't have lsb_release available.
     echo
-    echo -e "${WARN}lsb_release is not found.. Exiting.."
+    echo -e "${WARN}lsb_release is not found.. Exiting..${CLEAR}"
     echo
     exit 2
   fi
@@ -100,7 +120,7 @@ remove() {
   check_codenames
 
   echo
-  echo -e "${INFO}Removing docker binaries, gpg key, and apt list."
+  echo -e "${INFO}Removing docker binaries, gpg key, and apt list.${CLEAR}"
   echo
   # Uninstall docker engine binaries
   for pkg in "${docker_packages[@]}"; do
@@ -112,7 +132,7 @@ remove() {
     sudo rm -v /etc/apt/sources.list.d/docker.list
   else
     echo
-    echo -e "${INFO}Docker apt list not found.. skipping"
+    echo -e "${INFO}Docker apt list not found.. skipping${CLEAR}"
     echo
   fi
 
@@ -121,12 +141,12 @@ remove() {
     sudo rm -v /etc/apt/keyrings/docker.asc
   else
     echo
-    echo -e "${INFO}Docker gpg key not found.. skipping"
+    echo -e "${INFO}Docker gpg key not found.. skipping${CLEAR}"
     echo
   fi
 
   echo
-  echo -e "${INFO}Successfully cleaned up."
+  echo -e "${INFO}Successfully cleaned up.${CLEAR}"
   echo
   exit 0
 }
@@ -136,7 +156,7 @@ install() {
   check_codenames
 
   echo
-  echo -e "${INFO}Updating and installing ca-certificates and curl"
+  echo -e "${INFO}Updating and installing ca-certificates and curl${CLEAR}"
   echo
 
   # Install ca-certificates and curl
@@ -144,7 +164,7 @@ install() {
   sudo apt install ca-certificates curl -y
 
   echo
-  echo -e "${INFO}Setting up Docker GPG key"
+  echo -e "${INFO}Setting up Docker GPG key${CLEAR}"
   echo
 
   # Set up the keyrings directory with permissions
@@ -167,18 +187,18 @@ install() {
         sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     else
-      echo -e "${WARN}NO DETECTED OS INSTALLATION"
+      echo -e "${WARN}NO DETECTED OS INSTALLATION${CLEAR}"
       exit 99
     fi
 
     sudo chmod a+r /etc/apt/keyrings/docker.asc
   else
-    echo -e "${WARN}Docker gpg key not found.. Exiting"
+    echo -e "${WARN}Docker gpg key not found.. Exiting${CLEAR}"
     exit 1
   fi
 
   echo
-  echo -e "${INFO}Updating repositories and installing docker binaries.."
+  echo -e "${INFO}Updating repositories and installing docker binaries..${CLEAR}"
   echo
 
   # Install the docker binaries
@@ -189,7 +209,7 @@ install() {
   # Run the hello-world container to verify correct installation.
   if [[ -x /usr/bin/docker ]]; then
     echo
-    echo -e "${SUCCESS}Docker successfully installed. Running hello-world.."
+    echo -e "${SUCCESS}Docker successfully installed. Running hello-world..${CLEAR}"
     echo
 
     sudo docker run hello-world
@@ -197,7 +217,7 @@ install() {
     exit 0
   else
     echo
-    echo -e "${WARN}Docker not installed correctly."
+    echo -e "${WARN}Docker not installed correctly.${CLEAR}"
     echo
     exit 1
   fi
